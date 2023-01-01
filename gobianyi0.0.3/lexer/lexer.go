@@ -8,11 +8,12 @@ import (
 )
 
 type Lexer struct {
-	lexme     string
-	peek      byte             //读入的字符
-	line      int              //当前字符串处于第几行
-	reader    *bufio.Reader    //用于读取字节流
-	key_words map[string]Token //存储关键字
+	Lexme      string
+	lexmeStack []string
+	peek       byte             //读入的字符
+	line       int              //当前字符串处于第几行
+	reader     *bufio.Reader    //用于读取字节流
+	key_words  map[string]Token //存储关键字
 }
 
 func NewLexer(source string) Lexer {
@@ -28,10 +29,11 @@ func NewLexer(source string) Lexer {
 }
 
 func (l *Lexer) ReverseScan() {
-	back_len := len(l.lexme)
+	back_len := len(l.Lexme)
 	for i := 0; i < back_len; i++ {
 		l.reader.UnreadByte()
 	}
+	l.lexmeStack = l.lexmeStack[:(len(l.lexmeStack) - 1)]
 }
 
 func (l *Lexer) reserve() {
@@ -79,79 +81,97 @@ func (l *Lexer) Scan() (Token, error) {
 		}
 	}
 
-	l.lexme = ""
+	l.Lexme = ""
 
 	switch l.peek {
 	case '{':
-		l.lexme = "{"
+		l.Lexme = "{"
+		l.lexmeStack = append(l.lexmeStack, l.Lexme)
 		return NewToken(LEFT_BRACE), nil
 	case '}':
-		l.lexme = "}"
+		l.Lexme = "}"
+		l.lexmeStack = append(l.lexmeStack, l.Lexme)
 		return NewToken(RIGHT_BRACE), nil
 	case '+':
-		l.lexme = "+"
+		l.Lexme = "+"
+		l.lexmeStack = append(l.lexmeStack, l.Lexme)
 		return NewToken(PLUS), nil
 	case '-':
-		l.lexme = "-"
+		l.Lexme = "-"
+		l.lexmeStack = append(l.lexmeStack, l.Lexme)
 		return NewToken(MINUS), nil
 	case '(':
-		l.lexme = "("
+		l.Lexme = "("
+		l.lexmeStack = append(l.lexmeStack, l.Lexme)
 		return NewToken(LEFT_BRACKET), nil
 	case ')':
-		l.lexme = ")"
+		l.Lexme = ")"
+		l.lexmeStack = append(l.lexmeStack, l.Lexme)
 		return NewToken(RIGHT_BRACKET), nil
 	case '&':
 		if ok, _ := l.ReadCharacter('&'); ok {
-			l.lexme = "&&"
+			l.Lexme = "&&"
+			l.lexmeStack = append(l.lexmeStack, l.Lexme)
 			word := NewToken(AND)
 			return word, nil
 		} else {
-			l.lexme = "&"
+			l.Lexme = "&"
+			l.lexmeStack = append(l.lexmeStack, l.Lexme)
 			return NewToken(AND_OPERATOR), nil
 		}
 	case '|':
 		if ok, _ := l.ReadCharacter('|'); ok {
-			l.lexme = "||"
+			l.Lexme = "||"
 			word := NewToken(OR)
+			l.lexmeStack = append(l.lexmeStack, l.Lexme)
 			return word, nil
 		} else {
-			l.lexme = "|"
+			l.Lexme = "|"
+			l.lexmeStack = append(l.lexmeStack, l.Lexme)
 			return NewToken(OR_OPERATOR), nil
 		}
 	case '=':
 		if ok, _ := l.ReadCharacter('='); ok {
-			l.lexme = "=="
+			l.Lexme = "=="
+			l.lexmeStack = append(l.lexmeStack, l.Lexme)
 			word := NewToken(EQ)
 			return word, nil
 		} else {
-			l.lexme = "="
+			l.Lexme = "="
+			l.lexmeStack = append(l.lexmeStack, l.Lexme)
 			return NewToken(ASSIGN_OPERATOR), nil
 		}
 	case '!':
 		if ok, _ := l.ReadCharacter('='); ok {
-			l.lexme = "!="
+			l.Lexme = "!="
+			l.lexmeStack = append(l.lexmeStack, l.Lexme)
 			word := NewToken(NE)
 			return word, nil
 		} else {
-			l.lexme = "!"
+			l.Lexme = "!"
+			l.lexmeStack = append(l.lexmeStack, l.Lexme)
 			return NewToken(NEGATE_OPERATOR), nil
 		}
 	case '<':
 		if ok, _ := l.ReadCharacter('='); ok {
-			l.lexme = "<="
+			l.Lexme = "<="
+			l.lexmeStack = append(l.lexmeStack, l.Lexme)
 			word := NewToken(LE)
 			return word, nil
 		} else {
-			l.lexme = "<"
+			l.Lexme = "<"
+			l.lexmeStack = append(l.lexmeStack, l.Lexme)
 			return NewToken(LESS_OPERATOR), nil
 		}
 	case '>':
 		if ok, _ := l.ReadCharacter('='); ok {
-			l.lexme = ">="
+			l.Lexme = ">="
+			l.lexmeStack = append(l.lexmeStack, l.Lexme)
 			word := NewToken(GE)
 			return word, nil
 		} else {
-			l.lexme = ">"
+			l.Lexme = ">"
+			l.lexmeStack = append(l.lexmeStack, l.Lexme)
 			return NewToken(GREATER_OPERATOR), nil
 		}
 	}
@@ -166,11 +186,13 @@ func (l *Lexer) Scan() (Token, error) {
 				break
 			}
 			v = v*10 + num
+			l.Lexme += string(l.peek)
+
 			l.Readch()
 
-			l.lexme += string(l.peek)
 		}
 		if l.peek != '.' {
+			l.lexmeStack = append(l.lexmeStack, l.Lexme)
 			return NewToken(NUM), err
 		}
 
@@ -186,23 +208,22 @@ func (l *Lexer) Scan() (Token, error) {
 
 			x = x + float64(num)/d
 			d = d * 10
-			l.lexme += string(l.peek)
+			l.Lexme += string(l.peek)
 		}
-
+		l.lexmeStack = append(l.lexmeStack, l.Lexme)
 		return NewToken(REAL), err
 	}
 	if unicode.IsLetter(rune(l.peek)) {
-		var buffer []byte
 		for {
-			buffer = append(buffer, l.peek)
+			l.Lexme += string(l.peek)
 			l.Readch()
 			if !unicode.IsLetter(rune(l.peek)) && !unicode.IsNumber(rune(l.peek)) {
 				l.UnRead()
 				break
 			}
 		}
-		s := string(buffer)
-		token, ok := l.key_words[s]
+		l.lexmeStack = append(l.lexmeStack, l.Lexme)
+		token, ok := l.key_words[l.Lexme]
 		if ok {
 			return token, nil
 		}

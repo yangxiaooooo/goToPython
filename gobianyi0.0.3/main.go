@@ -6,8 +6,9 @@ import (
 )
 
 func main() {
-	source := "(1+(2+3)"
+	source := "9-5+2"
 	my_lexer := lexer.NewLexer(source)
 	parser := simple_parser.NewSimpleParser(my_lexer)
-	parser.Parse()
+	root, _ := parser.Parse()
+	print(root.Attribute())
 }
