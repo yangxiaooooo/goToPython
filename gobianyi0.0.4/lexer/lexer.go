@@ -31,7 +31,10 @@ func NewLexer(source string) Lexer {
 func (l *Lexer) ReverseScan() {
 	back_len := len(l.Lexme)
 	for i := 0; i < back_len; i++ {
-		l.reader.UnreadByte()
+		err := l.reader.UnreadByte()
+		if err != nil {
+			print(err.Error())
+		}
 	}
 	l.lexmeStack = l.lexmeStack[:(len(l.lexmeStack) - 1)]
 }
@@ -84,6 +87,10 @@ func (l *Lexer) Scan() (Token, error) {
 	l.Lexme = ""
 
 	switch l.peek {
+	case ';':
+		l.Lexme = ";"
+		l.lexmeStack = append(l.lexmeStack, l.Lexme)
+		return NewToken(SEMICOLON), nil
 	case '{':
 		l.Lexme = "{"
 		l.lexmeStack = append(l.lexmeStack, l.Lexme)

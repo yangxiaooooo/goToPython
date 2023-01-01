@@ -34,6 +34,11 @@ const (
 	RIGHT_BRACKET    // )
 	EOF              // end of file
 	ERROR            //
+	SEMICOLON        // ;
+	BOOL
+	INT
+	CHAR
+	TYPE
 )
 
 var token_map = make(map[Tag]string)
@@ -67,6 +72,10 @@ func init() {
 	token_map[STRING] = "string"
 	token_map[LEFT_BRACKET] = "("
 	token_map[RIGHT_BRACKET] = "0"
+	//token_map[BOOL] = "TYPE"
+	//token_map[INT] = "TYPE"
+	//token_map[CHAR] = "TYPE"
+
 }
 
 type Token struct {

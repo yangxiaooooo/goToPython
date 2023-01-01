@@ -26,6 +26,10 @@ func GetKeyWords() []Word {
 	key_words = append(key_words, NewWordToken("+", PLUS))
 	key_words = append(key_words, NewWordToken("if", IF))
 	key_words = append(key_words, NewWordToken("else", ELSE))
+	key_words = append(key_words, NewWordToken("int", TYPE))
+	key_words = append(key_words, NewWordToken("bool", TYPE))
+	key_words = append(key_words, NewWordToken("char", TYPE))
+	key_words = append(key_words, NewWordToken(";", SEMICOLON))
 
 	return key_words
 }
